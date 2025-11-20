@@ -1,0 +1,235 @@
+
+#apri file 
+with open("file.txt", "r") as file:
+    challenge = file.read()
+    file.close()
+
+
+with open("../cyphertext.txt") as f:  -> read as line cyphertext[0] = firs line
+    cipher = f.readlines()
+    f.close()
+
+import base64
+# decode base 64 x volte
+for _ in range(x): #if challeng is a file sue .decode("base64")
+    challenge = challenge.base64.b64decode(encodedFlag).decode('UTF-8')
+print(challenge)
+
+###########################################################################################################################
+#xor brute forces con caratteri 
+import itertools
+
+def bruteforce():
+    # Prova chiavi di lunghezze da 2 fino alla lunghezza di XOR_KEY
+    for length in range(2, len(XOR_KEY) + 1):
+
+        # Genera tutte le possibili chiavi di quella lunghezza
+        for key_tuple in itertools.product(letters, repeat=length):
+            key = ''.join(key_tuple)
+
+            # XOR tra messaggio e chiave
+            decoded = xor(encrypted_message, key)
+
+            # Cerca la flag
+            if "spritz{" in decoded:
+                print("FLAG trovata:", decoded)
+                print("XOR_KEY trovata:", key)
+                return  # Esce completamente dalla funzione
+
+    print("Nessuna chiave valida trovata.")
+
+#xor s1 = key s2= encoded flag
+def xorString(s1, s2): #Returns the xor of two strings
+    xor = "".join([chr(ord(x) ^ ord(y)) for x, y in zip(s1, s2)])
+    return xor
+
+#xor number
+def xorInt (num, key):
+    return num ^ key #xor between two integers
+
+###########################################################################################
+#frequenza caratteri
+from collections import Counter
+def getFreq(text):  #Gets the frequecies of every character given a string
+    text = text.replace(" ", "") # Removes all the spaces
+    return Counter(text)
+
+#---------------------------EXAMPLE----------------------------
+example = "Getting to know what Counter functions does"
+print(getFreq(example))
+#Output: Counter({'t': 6, 'n': 5, 'o': 5, 'e': 3, 'i': 2, 'w': 2, 'u': 2, 's': 2, 'G': 1, 'g': 1, 'k': 1, 'h': 1, 'a': 1, 'C': 1, 'r': 1, 'f': 1, 'c': 1, 'd': 1})
+
+###################################    
+#binary
+#binaryToInt
+def binaryToInt(number):
+    return int(str(number),2)
+
+#bit to string bintext= 101010010111001001110000101
+def bit_to_string(binText):
+    binText = binText.replace(" ", "")
+    return "".join(chr(int(binText[8*i:8*i+8] , 2)) for i in range(len(binText)//8))
+
+
+def convertBinaryToText(binaryText): #Version that includes the spaces in the binaryText passed to the function
+    convertedText = ""
+    values = binaryText.split()
+    for c in values:
+        convertedText+= chr(int(c,2))
+    return convertedText
+
+
+def binaryToText(binaryText): #version that needs to be used when there are no group of 8 bits
+    return ''.join(chr(int(''.join(c), 2)) for c in zip(*[iter(binaryText)]*8))
+
+
+#cesar cifer brutalforces
+def ceaserCipherBrutal(s, shift): #Called this function brutal because every character will be shifted
+    result = ""
+    for char in s:
+        result+= chr(ord(char)+ shift) #Here every character is shifted
+    return result
+
+s=""
+for i in range (-30, 30):
+    print("Level:", i, ceaserCipherBrutal(s, i), "\n")
+    
+    
+#cesar cifer 
+
+def ceaserCipher (s, shift): #s is a string, shift is the key used to shift the characters
+    result = ""
+    for char in s:
+        if ord(char)>= 65 and ord(char) <=90:   #Checks if the character is from A to Z
+            result += chr((ord(char) - 65 + shift)%26 + 65)
+        elif ord(char) >=97 and ord(char) <=122:
+            result += chr((ord(char) - 97 + shift)%26 + 97) #Checks if the character is from a to z
+        else:
+            result+=char #Special simbols will be avoided and not shifted
+    return result
+
+st = "Hello World"       #Example of ceaserCipher
+for i in range (0,10):
+    print("Level:", i,ceaserCipher(st, i),"\n")
+
+##################
+encrypted = "Olssv Dvysk" #If for example we know the shift, we can decrypt it using ceasercipher function passing -shift
+shift = 7
+print(ceaserCipher(encrypted, -7))
+
+
+
+
+import hashlib
+def md5reversehashing(text):
+    for i in range(0, 100000000): # 100000000 is the number of possible combinations
+        hash_object = hashlib.md5(str(i).encode()) # convert the number to a string and encode it
+        if hash_object.hexdigest() == text: # if the hash is equal to the text
+            print(i) # print the number
+            break
+#Driver Code
+md5reversehashing('e10adc3949ba59abbe56e057f20f883e') # 123456
+
+
+#######################################
+#morse decoder
+MORSE_DICT = {
+    '.-': 'A', '-...': 'B', '-.-.': 'C', '-..': 'D',
+    '.': 'E', '..-.': 'F', '--.': 'G', '....': 'H',
+    '..': 'I', '.---': 'J', '-.-': 'K', '.-..': 'L',
+    '--': 'M', '-.': 'N', '---': 'O', '.--.': 'P',
+    '--.-': 'Q', '.-.': 'R', '...': 'S', '-': 'T',
+    '..-': 'U', '...-': 'V', '.--': 'W', '-..-': 'X',
+    '-.--': 'Y', '--..': 'Z',
+    '-----':'0', '.----':'1', '..---':'2', '...--':'3',
+    '....-':'4', '.....':'5', '-....':'6', '--...':'7',
+    '---..':'8', '----.':'9',
+    '.-.-.-':'.', '--..--':',', '..--..':'?', '-.-.--':'!',
+    '-..-.':'/', '-....-':'-', '.----.':"'", '-.-.-.':';',
+    '---...':':', '.-..-.':'"', '-.--.-':'(', '-.--.-':')'
+}
+
+def decode_morse(morse):
+    words = morse.split(" / ")
+    decoded_words = []
+
+    for word in words:
+        letters = word.split()
+        decoded_word = "".join(MORSE_DICT.get(l, '?') for l in letters)
+        decoded_words.append(decoded_word)
+
+    return " ".join(decoded_words)
+
+#################################################
+##text replacer 
+def replace_chars(text, mapping):
+    return ''.join(mapping.get(ch, ch) for ch in text)
+
+mapping = {
+    'a': '@',
+    'e': '3',
+    'i': '1'
+}
+
+text = "ciao"
+encoded = replace_chars(text, mapping)
+print("Codificato:", encoded)
+
+inverse_mapping = {v: k for k, v in mapping.items()}
+decoded = replace_chars(encoded, inverse_mapping)
+print("Decodificato:", decoded)
+
+
+###########################
+#string inverter
+def reverse_string(s):
+    return s[::-1]
+
+###############################
+#from hex to schii
+hex = "29656C626174726F666D6F632074656720646E61206B6E696C20656874206574736170282041396C6578776A41595A593D763F68637461772F6D6F632E65627574756F792E7777772F2F3A7370747468202165697A755320796C65766F6C20796D20646E6120656D2079622064656D726F6672657020676E6F73207373656C646E65206E61206576726573656420756F79202C7261662073696874207469206564616D20657627756F792066492021736E6F6974616C75746172676E6F43"
+bytes_string = bytes.fromhex(hex)
+ascii_string = bytes_string.decode("ASCII")
+print(ascii_string)
+
+
+
+#########################################
+#from num to ascii
+
+def ascii_to_string(ascii_str):
+    # Divide la stringa ai trattini e converte ogni numero in carattere
+    return ''.join(chr(int(num)) for num in ascii_str.split('-'))
+
+
+ascii_input = "99-105-97-111"
+text = ascii_to_string(ascii_input)
+print(text)
+
+
+
+#
+###############################
+Fetch (usando curl):
+    curl <address>
+    curl --cookie "<cookie_name>=<cookie_value>" <uri>
+    curl <url> -X POST --data "<param1>=<val1>&<param2>=<val2>"
+
+SQL injection
+    Enter 'OR 1=1-- in login form
+    On the server this will evaluate to SELECT * FROM Users WHERE User = '' OR 1=1--' AND Pass = ''
+    1=1 evaluates to true, which satisfies the OR statement, and the rest of the query is commented out by the --
+
+
+
+################################
+Link utili:
+Solver vari -> https://www.dcode.fr/en
+Substitution Solver -> https://www.guballa.de/substitution-solver - https://www.quipqiup.com/ - 
+Crack Hash -> https://crackstation.net/
+Base64 -> https://www.base64decode.org/
+Vigenere -> https://www.guballa.de/vigenere-solver
+Caesar Cipher -> https://www.dcode.fr/caesar-cipher
+
+Altro insieme di strumenti:
+https://project-awesome.org/apsdehal/awesome-ctf
